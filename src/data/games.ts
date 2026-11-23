@@ -154,7 +154,7 @@ export const GAMES: Game[] = [
     popularity: 93,
     sizeGb: 1,
     minCpu: "Dual core 2 GHz",
-    minCpuScore: 15,
+    minCpuScore: 10,
     minRamGb: 4,
     minGpu: "Intégré (tout PC)",
     minGpuScore: 5,

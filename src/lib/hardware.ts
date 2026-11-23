@@ -8,6 +8,8 @@
 export interface Recognized {
   label: string;
   score: number;
+  /** true = modèle seulement estimé (nom générique ou inconnu) : jamais décisif pour refuser un jeu */
+  estimated?: boolean;
 }
 
 /** Nettoie un nom de matériel : minuscules, sans marque ni mots parasites */
@@ -59,9 +61,26 @@ const GPU_LIST: [string, number][] = [
   ["rtx 5090", 800], ["rtx 5080", 600], ["rtx 5070 ti", 480], ["rtx 5070", 420], ["rtx 5060 ti", 330], ["rtx 5060", 290], ["rtx 5050", 220],
   ["rx 9070 xt", 520], ["rx 9070", 450], ["rx 9060 xt", 330],
   ["arc a310", 35], ["arc a380", 60], ["arc a580", 150], ["arc a750", 190], ["arc a770", 210], ["arc b570", 230], ["arc b580", 250],
-  ["arc 140v", 50], ["arc 130v", 42], ["arc graphics", 65], ["arc", 65],
+  ["arc 140v", 50], ["arc 130v", 42], ["arc graphics", 80], ["arc", 80],
   ["890m", 75], ["880m", 68], ["radeon 780m", 55], ["760m", 38], ["740m", 28],
   ["rx 7600", 270], ["rx 7700 xt", 380], ["rx 7800 xt", 450],
+  // Portables anciens et séries M / MX
+  ["gtx 850m", 30], ["gtx 860m", 40], ["gtx 870m", 70], ["gtx 880m", 90], ["gtx 950m", 28], ["gtx 960m", 40], ["gtx 965m", 55], ["gtx 970m", 70], ["gtx 980m", 95],
+  ["820m", 4], ["825m", 5], ["830m", 6], ["840m", 12], ["845m", 18], ["910m", 4], ["920m", 6], ["920mx", 7], ["930m", 9], ["930mx", 9], ["940m", 12], ["940mx", 14], ["950m", 28],
+  ["gt 540m", 10], ["gt 550m", 12], ["gt 555m", 14], ["gt 635m", 14], ["gt 650m", 18], ["gt 740m", 12], ["gt 750m", 20], ["gt 755m", 22],
+  ["gt 240", 7], ["gt 440", 8], ["gt 520m", 4], ["9400 gt", 4], ["9500 gt", 4], ["9600 gt", 8], ["9800 gt", 12], ["8400 gs", 2], ["8600 gt", 5], ["8800 gt", 10],
+  ["gtx 260", 18], ["gtx 275", 24], ["gtx 280", 25], ["gtx 285", 28], ["gtx 295", 40],
+  ["gtx 1630", 55], ["rtx 2050", 110], ["gtx 1650 max q", 85],
+  // Pro / stations de travail
+  ["quadro k620", 22], ["quadro k1200", 40], ["quadro k2200", 55], ["quadro p620", 40], ["quadro p1000", 60], ["quadro p2000", 95], ["quadro t600", 60], ["quadro t1000", 85], ["quadro t2000", 120],
+  ["rtx a2000", 150], ["rtx a4000", 270], ["rtx a1000", 100],
+  ["pro wx 3200", 40], ["pro wx 5100", 100],
+  // AMD portables et récents
+  ["rx 6300m", 70], ["rx 6500m", 110], ["rx 6600s", 170], ["rx 6700s", 250], ["rx 6800s", 300], ["rx vega 56", 150], ["rx vega 64", 190], ["vega 56", 150], ["vega 64", 190], ["radeon vii", 270],
+  ["hd 4670", 8], ["hd 4850", 18], ["hd 4870", 22], ["hd 5670", 10], ["hd 5770", 20], ["hd 5850", 30], ["hd 5870", 35], ["hd 6850", 30], ["hd 6870", 35],
+  ["hd 7640g", 8], ["hd 8670d", 10], ["hd 8470d", 7], ["r5 m330", 10], ["r5 m430", 12], ["r7 m260", 15], ["r7 m340", 20],
+  // Intel Arc portables
+  ["arc a350m", 40], ["arc a370m", 55], ["arc a730m", 130], ["arc a770m", 200],
 ];
 
 const GPU_SORTED: [string, number, string][] = GPU_LIST.map(([k, v]) => [spaced(k), v, k] as [string, number, string]).sort((a, b) => b[0].length - a[0].length);
@@ -75,21 +94,41 @@ export function gpuTierLabel(score: number): string {
 }
 
 export function recognizeGpu(input: string): Recognized | null {
+  const lower = input.toLowerCase();
   const n = spaced(input);
-  if (!n) return null;
   const padded = ` ${n} `;
   for (const [key, score, raw] of GPU_SORTED) {
-    if (padded.includes(` ${key} `)) return { label: raw.toUpperCase().replace(/ TI$/, " Ti").replace(/ SUPER$/, " Super"), score };
+    if (n && padded.includes(` ${key} `)) return { label: raw.toUpperCase().replace(/ TI$/, " Ti").replace(/ SUPER$/, " Super"), score };
   }
-  // Modèle non listé : estimation d'après la classe du modèle (xx50, xx60, xx70, xx80, xx90)
-  const m = n.match(/(gtx|rtx|rx|gt) (\d{3,4})/);
+
+  // Modèle non listé : estimation d'après la classe du modèle. Jamais décisive (estimated).
+  const m = n.match(/(gtx|rtx|rx|gts|gt) (\d{3,4})/);
   if (m) {
     const num = parseInt(m[2], 10);
-    const modern = m[1] === "rtx" || (m[1] === "rx" && num >= 5000);
-    const cls = Math.floor((num % 1000) / 100); // 5,6,7,8,9
-    const est = modern ? (cls >= 9 ? 600 : cls >= 8 ? 450 : cls >= 7 ? 350 : cls >= 6 ? 250 : 150) : cls >= 8 ? 220 : cls >= 6 ? 140 : cls >= 5 ? 80 : 30;
-    return { label: `${m[1].toUpperCase()} ${m[2]} (estimé)`, score: est };
+    const cls = Math.floor((num % 1000) / 100);
+    let est: number;
+    if (m[1] === "gt" || m[1] === "gts") est = Math.min(30, 6 + cls * 4);
+    else if (m[1] === "gtx") est = num < 600 ? 25 : num < 1000 ? 45 : num < 1600 ? 100 : 110;
+    else if (m[1] === "rx") est = num >= 5000 ? [150, 150, 150, 150, 150, 150, 250, 350, 450, 600][cls] : num >= 400 ? 70 : 20;
+    else est = [60, 60, 60, 60, 60, 150, 250, 350, 450, 600][cls];
+    return { label: `${m[1].toUpperCase()} ${m[2]} (estimé)`, score: est, estimated: true };
   }
+
+  // Noms génériques (aucun numéro de modèle) : on estime la famille
+  const generic: [RegExp, string, number][] = [
+    [/express chipset|\bg4[15]\b|\b4 series\b|\bgma\b/, "Graphique très ancienne (chipset)", 2],
+    [/radeon.*\br[2-7]\b.*graphics|\br[2-7] graphics/, "Radeon R (intégrée ancienne)", 12],
+    [/radeon.*\bhd\b\s*\d{4}/, "Radeon HD (ancienne)", 10],
+    [/\b(8|9)\d{2}\s?m(x)?\b/, "GeForce M (portable ancien)", 12],
+    [/geforce.*\b(8|9)\d{3}\b/, "GeForce série 8/9 (très ancienne)", 5],
+    [/\buhd\b/, "Intel UHD (intégrée)", 14],
+    [/\biris\b/, "Intel Iris (intégrée)", 22],
+    [/intel.*\bhd\b|\bhd graphics\b/, "Intel HD (intégrée)", 9],
+    [/intel\W*(\(r\)\W*)?\s*graphics/, "Intel Graphics (intégrée)", 12],
+    [/radeon\W*(\(tm\)\W*)?\s*graphics|amd.*graphics/, "Radeon Graphics (intégrée Ryzen)", 30],
+    [/\bquadro\b|\brtx a\d{3,4}\b|\bradeon pro\b/, "Carte professionnelle", 60],
+  ];
+  for (const [re, label, score] of generic) if (re.test(lower) || re.test(n)) return { label, score, estimated: true };
   return null;
 }
 
@@ -110,11 +149,27 @@ export function cpuTierLabel(score: number): string {
 }
 
 export function recognizeCpu(input: string): Recognized | null {
-  const s = input.toLowerCase().replace(/\(r\)|\(tm\)|®|™/g, " ").replace(/\s+/g, " ").trim();
+  const s = input
+    .toLowerCase()
+    .replace(/\(r\)|\(tm\)|®|™/g, " ")
+    .replace(/\bpro\b|\bwith\b.*$|\bw\/.*$/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   if (!s) return null;
 
+  // Core Ultra (séries 1 et 2)
+  let m = s.match(/core\s*ultra\s*([3579])\s*(\d{3})\s*([a-z]{0,2})/);
+  const ULTRA: Record<string, number> = { "3": 110, "5": 165, "7": 210, "9": 250 };
+  if (m) {
+    let score = ULTRA[m[1]] * (m[2][0] === "2" ? 1.25 : 1);
+    if (/^(u|v)/.test(m[3])) score *= 0.65;
+    return { label: `Core Ultra ${m[1]} ${m[2]}${m[3].toUpperCase()}`, score: Math.round(score) };
+  }
+  m = s.match(/core\s*ultra\s*([3579])/);
+  if (m) return { label: `Core Ultra ${m[1]}`, score: ULTRA[m[1]], estimated: true };
+
   // Intel Core iN-XXXX(suffixe)
-  let m = s.match(/i([3579])[\s-]*(\d{4,5})([a-z]{0,2})/);
+  m = s.match(/i([3579])[\s-]*(\d{4,5})([a-z]{0,2})/);
   if (m) {
     const digits = m[2];
     const gen = digits.length === 5 || digits[0] === "1" ? parseInt(digits.slice(0, 2), 10) : parseInt(digits[0], 10);
@@ -124,27 +179,21 @@ export function recognizeCpu(input: string): Recognized | null {
     if (suffix.startsWith("y")) score *= 0.6;
     return { label: `Core i${m[1]}-${digits}${suffix.toUpperCase()}`, score: Math.round(score) };
   }
+  // 1re génération (3 chiffres) : i5-750, i7-920, i3-530
+  m = s.match(/i([3579])[\s-]*(\d{3})\b/);
+  if (m) return { label: `Core i${m[1]}-${m[2]}`, score: Math.round(INTEL_TIER[m[1]] * 0.45) };
 
-  // Intel Core Ultra (séries 1 et 2)
-  m = s.match(/core\s*ultra\s*([3579])\s*(\d{3})\s*([a-z]{0,2})/);
+  // "i5 8ème génération" / "i7 10th gen" : génération donnée sans numéro de modèle
+  m = s.match(/i([3579])\D{0,12}?(\d{1,2})\s*(?:st|nd|rd|th|e|è|ème|eme|ieme|ième)\b/);
   if (m) {
-    const base: Record<string, number> = { "3": 110, "5": 165, "7": 210, "9": 250 };
-    const series2 = m[2][0] === "2";
-    let score = base[m[1]] * (series2 ? 1.25 : 1);
-    if (/^(u|v)/.test(m[3])) score *= 0.65;
-    return { label: `Core Ultra ${m[1]} ${m[2]}${m[3].toUpperCase()}`, score: Math.round(score) };
-  }
-  m = s.match(/core\s*ultra\s*([3579])/);
-  if (m) {
-    const base: Record<string, number> = { "3": 110, "5": 165, "7": 210, "9": 250 };
-    return { label: `Core Ultra ${m[1]}`, score: base[m[1]] };
+    const gen = parseInt(m[2], 10);
+    return { label: `Core i${m[1]} génération ${gen}`, score: Math.round(INTEL_TIER[m[1]] * (INTEL_GEN[gen] ?? 0.8)), estimated: true };
   }
 
-  // AMD Ryzen AI (série 300) et Ryzen N XXXX
-  m = s.match(/ryzen\s*ai\s*(?:max\+?\s*)?([3579])\s*(?:hx\s*)?(\d{3})/);
-  if (m) return { label: `Ryzen AI ${m[1]} ${m[2]}`, score: { "3": 150, "5": 190, "7": 230, "9": 270 }[m[1]] ?? 200 };
+  // Intel Core m3/m5/m7 (très basse consommation)
+  if (/\bm[357][\s-]*\d/.test(s)) return { label: "Core m (basse conso)", score: 25, estimated: true };
 
-  // AMD Ryzen N XXXX
+  // AMD Ryzen
   m = s.match(/ryzen\s*([3579])\s*(\d{4})([a-z]{0,2})/);
   if (m) {
     const gen = parseInt(m[2][0], 10);
@@ -152,26 +201,37 @@ export function recognizeCpu(input: string): Recognized | null {
     if (/^u/.test(m[3])) score *= 0.75;
     return { label: `Ryzen ${m[1]} ${m[2]}${m[3].toUpperCase()}`, score: Math.round(score) };
   }
+  m = s.match(/ryzen\s*ai\s*(?:max\+?\s*)?([3579])\s*(?:hx\s*)?(\d{3})/);
+  if (m) return { label: `Ryzen AI ${m[1]} ${m[2]}`, score: { "3": 150, "5": 190, "7": 230, "9": 270 }[m[1]] ?? 200 };
+  m = s.match(/ryzen\s*([3579])\b/);
+  if (m) return { label: `Ryzen ${m[1]}`, score: RYZEN_TIER[m[1]], estimated: true };
 
   // Familles anciennes ou d'entrée de gamme
-  const legacy: [RegExp, string, number][] = [
+  const legacy: [RegExp, string, number, boolean?][] = [
     [/core\s*2\s*quad/, "Core 2 Quad", 35],
     [/core\s*2\s*duo/, "Core 2 Duo", 25],
     [/celeron\s*(n|j)\d{4}/, "Celeron (basse conso)", 14],
     [/celeron/, "Celeron", 20],
     [/pentium\s*(silver|gold)/, "Pentium Silver/Gold", 25],
     [/pentium/, "Pentium", 28],
+    [/\batom\b/, "Atom (très basse conso)", 10],
     [/athlon/, "Athlon", 30],
+    [/phenom.*x4/, "Phenom II X4", 45],
+    [/phenom/, "Phenom", 30],
     [/\bfx[\s-]*[4]\d{3}/, "AMD FX-4xxx", 38],
     [/\bfx[\s-]*[68]\d{3}/, "AMD FX", 58],
-    [/\ba(4|6)[\s-]/, "AMD A4/A6", 22],
-    [/\ba(8|10|12)[\s-]/, "AMD A8/A10", 32],
-    [/xeon/, "Xeon", 70],
-    [/\bi3\b/, "Core i3", 55],
-    [/\bi5\b/, "Core i5", 70],
-    [/\bi7\b/, "Core i7", 90],
+    [/\ba(4|6)[\s-]\d/, "AMD A4/A6", 22],
+    [/\ba(8|9)[\s-]\d/, "AMD A8/A9", 32],
+    [/\ba(10|12)[\s-]\d/, "AMD A10/A12", 45],
+    [/xeon.*e5[\s-]*26\d{2}\s*v[34]/, "Xeon E5 v3/v4", 130],
+    [/xeon.*e3/, "Xeon E3", 90],
+    [/xeon/, "Xeon", 90, true],
+    [/\bi3\b/, "Core i3", 55, true],
+    [/\bi5\b/, "Core i5", 70, true],
+    [/\bi7\b/, "Core i7", 90, true],
+    [/\bi9\b/, "Core i9", 150, true],
   ];
-  for (const [re, label, score] of legacy) if (re.test(s)) return { label, score };
+  for (const [re, label, score, est] of legacy) if (re.test(s)) return { label, score, estimated: est };
   return null;
 }
 

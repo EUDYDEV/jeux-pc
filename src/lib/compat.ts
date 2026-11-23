@@ -16,48 +16,75 @@ export const VERDICT_LABEL: Record<Verdict, string> = {
   ok: "Vous êtes compatible",
   limite: "Jouable en qualité réduite",
   non: "Non compatible",
-  inconnu: "À compléter",
+  inconnu: "À vérifier",
 };
 
 /**
+ * Seuils réglables (rapport = performance du PC / performance minimale du jeu).
+ * À calibrer avec l'expérience du technicien.
+ *  - au-dessus de `ok`   : compatible
+ *  - entre `non` et `ok` : jouable en qualité réduite, risque de ralentissements
+ *  - en dessous de `non` : non compatible
+ * Un matériel seulement ESTIMÉ (nom générique / modèle inconnu) ne peut jamais être jugé « non compatible ».
+ */
+export const THRESHOLDS = {
+  gpu: { ok: 1.4, non: 0.45 },
+  cpu: { ok: 1.2, non: 0.7 },
+  estimatedOk: 2.5, // un matériel estimé n'est « ok » que s'il dépasse très largement le minimum
+  estimatedNon: 0.8, // en dessous : on ne tranche pas, on renvoie vers le technicien
+};
+
+function rate(ratio: number, t: { ok: number; non: number }, estimated: boolean, minScore: number): PartStatus {
+  // Jeux « légers » (exigence minimale quasi nulle) : il suffit d'atteindre le minimum
+  if (!estimated && minScore <= 12 && ratio >= 1) return "ok";
+  if (estimated) {
+    if (ratio >= THRESHOLDS.estimatedOk) return "ok";
+    if (ratio >= THRESHOLDS.estimatedNon) return "limite";
+    return "inconnu";
+  }
+  if (ratio >= t.ok) return "ok";
+  if (ratio >= t.non) return "limite";
+  return "non";
+}
+
+/**
  * Moteur de compatibilité : compare le PC aux exigences du jeu.
- * Le processeur et la carte graphique sont reconnus par leur modèle (base interne),
- * pas par une simple liste déroulante. Résultat indicatif, validé ensuite par le technicien.
+ * Le résultat est indicatif : la validation finale revient au technicien.
  */
 export function checkGame(game: Game, pc: PcSpecs): CompatResult {
   const reasons: string[] = [];
   const blockers: string[] = [];
+  const uncertain: string[] = [];
+  const notes: string[] = [];
   const parts: CompatResult["parts"] = { cpu: "inconnu", gpu: "inconnu", ram: "inconnu", disk: "inconnu", windows: "inconnu" };
 
   // Processeur
   const cpu = recognizeCpu(pc.cpu);
   if (cpu) {
-    if (cpu.score < game.minCpuScore * 0.85) {
-      parts.cpu = "non";
+    parts.cpu = rate(cpu.score / game.minCpuScore, THRESHOLDS.cpu, !!cpu.estimated, game.minCpuScore);
+    if (parts.cpu === "non") {
       const msg = `Processeur trop lent (${game.minCpu} ou équivalent requis)`;
       reasons.push(msg);
       blockers.push(msg);
-    } else if (cpu.score < game.minCpuScore * 1.15) {
-      parts.cpu = "limite";
-      reasons.push("Processeur juste au niveau minimum");
-    } else parts.cpu = "ok";
-  } else if (pc.cpu.trim()) reasons.push("Processeur non reconnu : à vérifier par le technicien");
+    } else if (parts.cpu === "limite")
+      reasons.push(cpu.estimated ? "Processeur estimé proche du minimum" : "Processeur proche ou légèrement sous le minimum : ralentissements possibles");
+    else if (parts.cpu === "inconnu") uncertain.push("processeur");
+  } else if (pc.cpu.trim()) uncertain.push("processeur");
 
   // Carte graphique
   const gpu = recognizeGpu(pc.gpu);
   if (gpu) {
-    if (gpu.score < game.minGpuScore) {
-      parts.gpu = "non";
+    parts.gpu = rate(gpu.score / game.minGpuScore, THRESHOLDS.gpu, !!gpu.estimated, game.minGpuScore);
+    if (parts.gpu === "non") {
       const msg = `Carte graphique insuffisante (${game.minGpu} requis)`;
       reasons.push(msg);
       blockers.push(msg);
-    } else if (gpu.score < game.minGpuScore * 1.5) {
-      parts.gpu = "limite";
-      reasons.push("Carte graphique proche du minimum : réglages bas conseillés");
-    } else parts.gpu = "ok";
-  } else if (pc.gpu.trim()) reasons.push("Carte graphique non reconnue : à vérifier par le technicien");
+    } else if (parts.gpu === "limite")
+      reasons.push(gpu.estimated ? "Carte graphique estimée proche du minimum" : "Carte graphique proche ou légèrement sous le minimum : réglages bas conseillés");
+    else if (parts.gpu === "inconnu") uncertain.push("carte graphique");
+  } else if (pc.gpu.trim()) uncertain.push("carte graphique");
 
-  // RAM
+  // RAM (valeur exacte choisie par le client)
   const ram = parseFloat(pc.ramGb);
   if (!isNaN(ram)) {
     if (ram < game.minRamGb) {
@@ -65,9 +92,6 @@ export function checkGame(game: Game, pc: PcSpecs): CompatResult {
       const msg = `RAM insuffisante (${ram} Go, ${game.minRamGb} Go requis)`;
       reasons.push(msg);
       blockers.push(msg);
-    } else if (ram === game.minRamGb && game.minRamGb >= 8) {
-      parts.ram = "limite";
-      reasons.push("RAM au strict minimum");
     } else parts.ram = "ok";
   }
 
@@ -79,10 +103,10 @@ export function checkGame(game: Game, pc: PcSpecs): CompatResult {
       const msg = `Espace disque insuffisant (${game.sizeGb} Go nécessaires, ${storage} Go libres)`;
       reasons.push(msg);
       blockers.push(msg);
-    } else if (storage < game.sizeGb * 1.15) {
-      parts.disk = "limite";
-      reasons.push("Espace disque très juste");
-    } else parts.disk = "ok";
+    } else {
+      parts.disk = "ok";
+      if (storage < game.sizeGb * 1.15) notes.push("espace disque très juste : prévoyez de libérer de la place");
+    }
   }
 
   // Windows
@@ -96,23 +120,25 @@ export function checkGame(game: Game, pc: PcSpecs): CompatResult {
   }
 
   const values = Object.values(parts);
-  const known = values.filter((v) => v !== "inconnu").length;
+  const missing: string[] = [];
+  if (!pc.cpu.trim()) missing.push("processeur");
+  if (!pc.gpu.trim()) missing.push("carte graphique");
+  if (isNaN(ram)) missing.push("RAM");
+
   let verdict: Verdict;
-  if (known === 0) {
+  if (values.every((v) => v === "inconnu") && uncertain.length === 0) {
     verdict = "inconnu";
     reasons.unshift("Renseignez votre PC pour obtenir une estimation");
   } else if (values.includes("non")) verdict = "non";
   else if (values.includes("limite")) verdict = "limite";
-  else if (parts.cpu === "inconnu" || parts.gpu === "inconnu" || parts.ram === "inconnu") {
-    // Les 3 éléments décisifs (processeur, carte graphique, RAM) doivent être connus
+  else if (missing.length || uncertain.length) {
     verdict = "inconnu";
-    const missing = ([["cpu", "processeur"], ["gpu", "carte graphique"], ["ram", "RAM"]] as const)
-      .filter(([k]) => parts[k] === "inconnu")
-      .map(([, l]) => l);
-    reasons.push(`Aucun blocage détecté pour l'instant. À renseigner : ${missing.join(", ")}`);
+    if (missing.length) reasons.push(`À renseigner : ${missing.join(", ")}`);
+    if (uncertain.length) reasons.push(`À vérifier par le technicien : ${uncertain.join(", ")} (modèle non identifié avec certitude)`);
   } else {
     verdict = "ok";
     reasons.push("Votre PC répond aux exigences du jeu");
+    reasons.push(...notes);
     if (parts.disk === "inconnu") reasons.push("pensez à indiquer l'espace disque libre");
     if (parts.windows === "inconnu") reasons.push("et la version de Windows");
   }
