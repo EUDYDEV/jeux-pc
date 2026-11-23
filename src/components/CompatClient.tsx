@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ArrowRight, CheckCircle2, Copy, HelpCircle, ImagePlus, Info, ScanSearch, TriangleAlert, X, XCircle } from "lucide-react";
-import { useSelection } from "@/context/SelectionContext";
+import { EMPTY_PC, useSelection } from "@/context/SelectionContext";
 import { GAMES } from "@/data/games";
 import { VERDICT_LABEL, checkGame, type PartStatus, type Verdict } from "@/lib/compat";
 import {
@@ -125,6 +125,22 @@ export function CompatClient() {
             <ScanSearch className="size-4" /> Détecter mon PC
           </button>
         </div>
+        {anyFilled && (
+          <button
+            type="button"
+            onClick={() => {
+              if (preview) URL.revokeObjectURL(preview);
+              setPreview(null);
+              setPc(EMPTY_PC);
+              setDetectMsg("");
+              setPasteText("");
+              setPasteMsg("");
+            }}
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-line px-3 text-sm font-semibold text-mute hover:border-danger hover:text-danger"
+          >
+            <X className="size-4" /> Effacer les infos de mon PC
+          </button>
+        )}
         {detectMsg && <p className="rounded-lg bg-raised p-3 text-xs text-mute" role="status">{detectMsg}</p>}
 
         <div className="rounded-xl border border-line p-4">
