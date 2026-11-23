@@ -39,7 +39,7 @@ export function buildBookingMessage(opts: {
   lines.push("", "✅ *Compatibilité estimée par le site (indicatif)* :");
   for (const g of games) {
     const v = checkGame(g, pc).verdict;
-    lines.push(`• ${g.name} : ${VERDICT_LABEL[v]}${v === "non" ? " — le client souhaite commander quand même" : ""}`);
+    lines.push(`• ${g.name} : ${VERDICT_LABEL[v]}${v === "non" ? " — client informé que le jeu risque de ne pas fonctionner, souhaite commander quand même" : ""}`);
   }
   if (pc.screenshotName) lines.push(`• Capture d'écran : à envoyer ensuite dans cette conversation (${pc.screenshotName})`);
   lines.push(

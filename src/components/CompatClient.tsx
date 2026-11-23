@@ -267,8 +267,7 @@ export function CompatClient() {
           <div className="mt-5 flex gap-3 rounded-xl border border-cyan/30 bg-cyan/5 p-4 text-sm">
             <Info className="mt-0.5 size-4 shrink-0 text-cyan" aria-hidden />
             <p className="text-mute">
-              <strong className="text-white">Résultat indicatif et facultatif.</strong> Même si un jeu est signalé non compatible, <strong className="text-lime">vous pouvez quand même le commander</strong> : le technicien validera et vous proposera une solution.
-            </p>
+              <strong className="text-white">Résultat indicatif.</strong> Un jeu « non compatible » ne fonctionnera pas correctement sur votre PC. Vous restez libre de le commander, <strong className="text-white">mais sans garantie de fonctionnement</strong>. La validation finale est faite par le technicien.</p>
           </div>
 
           <Link href="/reservation" className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-violet font-semibold transition hover:bg-violet/85 active:scale-[0.98]">

@@ -12,7 +12,7 @@ import { buildBookingMessage, waLink } from "@/lib/whatsapp";
 import { localRepository } from "@/lib/repository";
 import type { BookingDraft, BookingRequest } from "@/lib/types";
 
-type Errors = Partial<Record<keyof BookingDraft | "games", string>>;
+type Errors = Partial<Record<keyof BookingDraft | "games" | "ack", string>>;
 
 function validate(b: BookingDraft, gamesCount: number): Errors {
   const e: Errors = {};
@@ -34,9 +34,12 @@ function Err({ msg }: { msg?: string }) {
 export function ReservationClient() {
   const { ready, games, total, pc, booking, setBooking, clear } = useSelection();
   const [errors, setErrors] = useState<Errors>({});
+  const [ack, setAck] = useState(false);
   const [sent, setSent] = useState<{ req: BookingRequest; message: string } | null>(null);
 
   if (!ready) return <div className="h-64" aria-busy />;
+
+  const incompatible = games.filter((g) => checkGame(g.game, pc).verdict === "non");
 
   const set = <K extends keyof BookingDraft>(k: K, v: BookingDraft[K]) => {
     setBooking({ ...booking, [k]: v });
@@ -46,6 +49,7 @@ export function ReservationClient() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     const errs = validate(booking, games.length);
+    if (incompatible.length && !ack) errs.ack = "Cochez la case pour confirmer que vous avez compris le risque.";
     setErrors(errs);
     if (Object.keys(errs).length) {
       requestAnimationFrame(() => document.querySelector<HTMLElement>("[aria-invalid='true']")?.focus());
@@ -212,10 +216,18 @@ export function ReservationClient() {
             <span className="text-mute">Total estimatif</span>
             <span className="font-display text-2xl font-bold text-lime">{formatFcfa(total)}</span>
           </div>
-          {games.some((g) => checkGame(g.game, pc).verdict === "non") && (
-            <p className="mt-4 rounded-lg bg-lime/10 p-3 text-xs text-lime">
-              Certains jeux sont signalés non compatibles avec votre PC. Aucun souci : vous pouvez commander, le technicien vous proposera la meilleure solution.
-            </p>
+          {incompatible.length > 0 && (
+            <div className="mt-4 rounded-lg border border-amber-400/40 bg-amber-400/10 p-3 text-xs text-amber-200">
+              <p className="font-semibold">
+                ⚠ Non compatible avec votre PC : {incompatible.map((g) => g.game.name).join(", ")}
+              </p>
+              <p className="mt-1">Ces jeux risquent de ne pas fonctionner sur votre ordinateur. Vous pouvez quand même les commander, sans garantie de fonctionnement.</p>
+              <label className="mt-3 flex cursor-pointer items-start gap-2 text-white">
+                <input type="checkbox" className="mt-0.5 size-4 shrink-0 accent-violet" checked={ack} onChange={(e) => { setAck(e.target.checked); if (errors.ack) setErrors({ ...errors, ack: undefined }); }} aria-invalid={!!errors.ack} />
+                <span>Je comprends que ces jeux risquent de ne pas fonctionner et je souhaite quand même les commander.</span>
+              </label>
+              <Err msg={errors.ack} />
+            </div>
           )}
           <div className="mt-4 text-xs text-mute">
             PC : {pc.ramGb || pc.cpu ? [pc.cpu, pc.ramGb && `${pc.ramGb} Go RAM`, pc.gpu].filter(Boolean).join(" · ") : "non renseigné"}{" "}
