@@ -171,8 +171,14 @@ export function CompatClient() {
           <input className="field" list="cpus" placeholder="ex. Intel Core i5-8250U" value={pc.cpu} onChange={(e) => set("cpu", e.target.value)} autoComplete="off" />
           <datalist id="cpus">{SUGGESTIONS.cpu.map((c) => <option key={c} value={c} />)}</datalist>
           {pc.cpu && (
-            <p className={`mt-1.5 text-xs ${cpuInfo ? "text-lime" : "text-amber-300"}`}>
-              {cpuInfo ? `✔ Reconnu : ${cpuInfo.label} — ${cpuTierLabel(cpuInfo.score)}` : "Modèle non reconnu : le technicien le vérifiera."}
+            <p className={`mt-1.5 text-xs ${cpuInfo && !cpuInfo.estimated ? "text-lime" : "text-amber-300"}`}>
+              {!cpuInfo
+                ? "Modèle non reconnu : le technicien le vérifiera."
+                : cpuInfo.ambiguous
+                  ? "⚠ Plusieurs modèles saisis : indiquez un seul processeur (ex. Intel Core i5-8250U) pour un résultat fiable."
+                  : cpuInfo.estimated
+                    ? `≈ Estimation (${cpuInfo.label}) : modèle exact non identifié, le technicien vérifiera. Ajoutez le numéro du modèle pour plus de précision.`
+                    : `✔ Reconnu : ${cpuInfo.label} — ${cpuTierLabel(cpuInfo.score)}`}
             </p>
           )}
         </label>
@@ -182,8 +188,14 @@ export function CompatClient() {
           <input className="field" list="gpus" placeholder="ex. NVIDIA GTX 1050 ou Intel UHD 620" value={pc.gpu} onChange={(e) => set("gpu", e.target.value)} autoComplete="off" />
           <datalist id="gpus">{SUGGESTIONS.gpu.map((c) => <option key={c} value={c} />)}</datalist>
           {pc.gpu && (
-            <p className={`mt-1.5 text-xs ${gpuInfo ? "text-lime" : "text-amber-300"}`}>
-              {gpuInfo ? `✔ Reconnue : ${gpuInfo.label} — ${gpuTierLabel(gpuInfo.score)}` : "Modèle non reconnu : le technicien le vérifiera."}
+            <p className={`mt-1.5 text-xs ${gpuInfo && !gpuInfo.estimated ? "text-lime" : "text-amber-300"}`}>
+              {!gpuInfo
+                ? "Modèle non reconnu : le technicien le vérifiera."
+                : gpuInfo.ambiguous
+                  ? "⚠ Plusieurs modèles saisis : indiquez une seule carte graphique pour un résultat fiable."
+                  : gpuInfo.estimated
+                    ? `≈ Estimation (${gpuInfo.label}) : modèle exact non identifié, le technicien vérifiera. Vérifiez l'orthographe ou ajoutez le numéro exact.`
+                    : `✔ Reconnue : ${gpuInfo.label} — ${gpuTierLabel(gpuInfo.score)}`}
             </p>
           )}
         </label>

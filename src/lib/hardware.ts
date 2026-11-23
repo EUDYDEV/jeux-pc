@@ -10,6 +10,8 @@ export interface Recognized {
   score: number;
   /** true = modèle seulement estimé (nom générique ou inconnu) : jamais décisif pour refuser un jeu */
   estimated?: boolean;
+  /** true = plusieurs modèles saisis dans le même champ */
+  ambiguous?: boolean;
 }
 
 /** Nettoie un nom de matériel : minuscules, sans marque ni mots parasites */
@@ -80,7 +82,7 @@ const GPU_LIST: [string, number][] = [
   ["hd 4670", 8], ["hd 4850", 18], ["hd 4870", 22], ["hd 5670", 10], ["hd 5770", 20], ["hd 5850", 30], ["hd 5870", 35], ["hd 6850", 30], ["hd 6870", 35],
   ["hd 7640g", 8], ["hd 8670d", 10], ["hd 8470d", 7], ["r5 m330", 10], ["r5 m430", 12], ["r7 m260", 15], ["r7 m340", 20],
   // Intel Arc portables
-  ["arc a350m", 40], ["arc a370m", 55], ["arc a730m", 130], ["arc a770m", 200],
+  ["hd 2000", 3], ["hd 2500", 5], ["hd 4200", 9], ["hd 5000", 16], ["hd 6000", 18], ["iris 5100", 22], ["iris 6100", 24], ["arc a350m", 40], ["arc a370m", 55], ["arc a730m", 130], ["arc a770m", 200],
 ];
 
 const GPU_SORTED: [string, number, string][] = GPU_LIST.map(([k, v]) => [spaced(k), v, k] as [string, number, string]).sort((a, b) => b[0].length - a[0].length);
@@ -94,6 +96,10 @@ export function gpuTierLabel(score: number): string {
 }
 
 export function recognizeGpu(input: string): Recognized | null {
+  return markAmbiguous(recognizeGpuModel(input), input, "gpu");
+}
+
+function recognizeGpuModel(input: string): Recognized | null {
   const lower = input.toLowerCase();
   const n = spaced(input);
   const padded = ` ${n} `;
@@ -148,7 +154,29 @@ export function cpuTierLabel(score: number): string {
   return "Processeur performant";
 }
 
+/** Plusieurs modèles dans un même champ (« Phenom, A10 », « GTX 1050 / 1650 ») : on ne peut pas trancher. */
+const CPU_WORDS = /\b(i[3579]|ryzen|core|celeron|pentium|athlon|phenom|fx|xeon|a(4|6|8|9|10|12)|atom)\b/;
+const GPU_WORDS = /\b(gtx|rtx|rx|gts|gt|geforce|radeon|uhd|hd|iris|vega|arc|quadro|mx\d*|\d{3,4}\s?(ti|m|mx|s|xt)?)\b/;
+
+function isAmbiguous(text: string, kind: "cpu" | "gpu"): boolean {
+  const t = text
+    .toLowerCase()
+    .replace(/\bw\/.*$/, "")
+    .replace(/\bwith\b.*$/, "");
+  const words = kind === "cpu" ? CPU_WORDS : GPU_WORDS;
+  const segments = t.split(/[,;/+&|]|\bet\b|\bou\b|\band\b/).map((x) => x.trim()).filter((x) => x.length >= 2);
+  return segments.length >= 2 && segments.filter((x) => words.test(x)).length >= 2;
+}
+
+function markAmbiguous(r: Recognized | null, input: string, kind: "cpu" | "gpu"): Recognized | null {
+  return r && isAmbiguous(input, kind) ? { ...r, estimated: true, ambiguous: true } : r;
+}
+
 export function recognizeCpu(input: string): Recognized | null {
+  return markAmbiguous(recognizeCpuModel(input), input, "cpu");
+}
+
+function recognizeCpuModel(input: string): Recognized | null {
   const s = input
     .toLowerCase()
     .replace(/\(r\)|\(tm\)|®|™/g, " ")
@@ -211,13 +239,13 @@ export function recognizeCpu(input: string): Recognized | null {
     [/core\s*2\s*quad/, "Core 2 Quad", 35],
     [/core\s*2\s*duo/, "Core 2 Duo", 25],
     [/celeron\s*(n|j)\d{4}/, "Celeron (basse conso)", 14],
-    [/celeron/, "Celeron", 20],
+    [/celeron/, "Celeron", 20, true],
     [/pentium\s*(silver|gold)/, "Pentium Silver/Gold", 25],
-    [/pentium/, "Pentium", 28],
+    [/pentium/, "Pentium", 28, true],
     [/\batom\b/, "Atom (très basse conso)", 10],
-    [/athlon/, "Athlon", 30],
-    [/phenom.*x4/, "Phenom II X4", 45],
-    [/phenom/, "Phenom", 30],
+    [/athlon/, "Athlon", 30, true],
+    [/phenom.*x4/, "Phenom II X4", 45, true],
+    [/phenom/, "Phenom", 30, true],
     [/\bfx[\s-]*[4]\d{3}/, "AMD FX-4xxx", 38],
     [/\bfx[\s-]*[68]\d{3}/, "AMD FX", 58],
     [/\ba(4|6)[\s-]\d/, "AMD A4/A6", 22],
