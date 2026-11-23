@@ -4,7 +4,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { useSelection } from "@/context/SelectionContext";
-import { GameCover } from "./GameCover";
+import { GameImage } from "./GameImage";
 import { formatFcfa } from "@/lib/format";
 
 export function SelectionClient() {
@@ -38,7 +38,7 @@ export function SelectionClient() {
               exit={{ opacity: 0, x: -40 }}
               className="flex gap-4 rounded-2xl border border-line bg-surface p-3 sm:p-4"
             >
-              <GameCover game={game} className="hidden aspect-[5/3] w-36 shrink-0 rounded-xl sm:block" />
+              <GameImage game={game} className="hidden aspect-[5/3] w-36 shrink-0 rounded-xl sm:block" />
               <div className="flex min-w-0 flex-1 flex-col justify-between gap-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">

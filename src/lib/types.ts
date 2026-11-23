@@ -1,5 +1,3 @@
-export type GpuTier = 0 | 1 | 2 | 3 | 4;
-
 export type Category =
   | "Action"
   | "Aventure"
@@ -20,9 +18,14 @@ export interface Game {
   sizeGb: number;
   /** Configuration minimale lisible */
   minCpu: string;
+  /** Indice de performance minimale du processeur (voir src/lib/hardware.ts) */
+  minCpuScore: number;
   minRamGb: number;
   minGpu: string;
-  minGpuTier: GpuTier;
+  /** Indice de performance minimale de la carte graphique (GTX 1060 6 Go = 100) */
+  minGpuScore: number;
+  /** Identifiant Steam : sert à afficher le visuel officiel du jeu */
+  steamAppId: number;
   minWindows: 10 | 11;
   /** Teinte (0-360) utilisée pour générer le visuel */
   hue: number;
@@ -34,7 +37,6 @@ export interface PcSpecs {
   cpu: string;
   ramGb: string;
   gpu: string;
-  gpuTier: string; // "" | "0".."4"
   storageGb: string;
   windows: string; // "" | "10" | "11" | "7/8"
   screenshotName?: string;

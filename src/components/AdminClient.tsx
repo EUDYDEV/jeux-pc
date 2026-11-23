@@ -6,7 +6,7 @@ import { localRepository } from "@/lib/repository";
 import { formatDateFr, formatFcfa } from "@/lib/format";
 import type { BookingRequest, RequestStatus } from "@/lib/types";
 
-const EMPTY_PC = { cpu: "i5-8250U", ramGb: "8", gpu: "Intel UHD 620", gpuTier: "0", storageGb: "180", windows: "10" };
+const EMPTY_PC = { cpu: "i5-8250U", ramGb: "8", gpu: "Intel UHD 620", storageGb: "180", windows: "10" };
 
 /** Demandes fictives pour illustrer l'espace admin (non stockées). */
 const SAMPLE: BookingRequest[] = [
@@ -25,7 +25,7 @@ const SAMPLE: BookingRequest[] = [
     status: "confirmee",
     booking: { fullName: "Yao Mariam", whatsapp: "05 55 66 77 88", installType: "domicile", date: "2026-12-04", time: "10:00", zone: "Cocody Angré", notes: "" },
     games: [{ id: "gta-v", name: "Grand Theft Auto V", price: 3000 }],
-    pc: { ...EMPTY_PC, ramGb: "16", gpu: "GTX 1650", gpuTier: "1", storageGb: "300", windows: "11" },
+    pc: { ...EMPTY_PC, ramGb: "16", gpu: "GTX 1650", storageGb: "300", windows: "11" },
     total: 3000,
   },
 ];

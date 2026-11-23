@@ -5,7 +5,7 @@ import { Check, Cpu, HardDrive, MemoryStick, Plus } from "lucide-react";
 import type { Game } from "@/lib/types";
 import { formatFcfa } from "@/lib/format";
 import { useSelection } from "@/context/SelectionContext";
-import { GameCover } from "./GameCover";
+import { GameImage } from "./GameImage";
 
 const BADGE_STYLE: Record<string, string> = {
   Populaire: "bg-violet/90 text-white",
@@ -29,7 +29,7 @@ export function GameCard({ game }: { game: Game }) {
       }`}
     >
       <div className="relative aspect-[5/3] overflow-hidden">
-        <GameCover game={game} className="h-full w-full transition-transform duration-500 group-hover:scale-105" />
+        <GameImage game={game} className="h-full w-full transition-transform duration-500 group-hover:scale-105" />
         {game.badge && (
           <span className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${BADGE_STYLE[game.badge]}`}>
             {game.badge}

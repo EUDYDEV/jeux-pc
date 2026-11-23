@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, Cpu, HeadphonesIcon, MonitorCheck, Wifi, Gamepad2, ClipboardCheck, CalendarCheck, MessageCircle } from "lucide-react";
 import { GAMES } from "@/data/games";
-import { GameCover } from "@/components/GameCover";
+import { GameImage } from "@/components/GameImage";
 import { GameCard } from "@/components/GameCard";
 import { Reveal } from "@/components/Reveal";
 import { formatFcfa } from "@/lib/format";
@@ -82,7 +82,7 @@ export default function HomePage() {
                 key={g.id}
                 className={`overflow-hidden rounded-2xl border border-line shadow-2xl ${i % 2 ? "translate-y-8" : ""} ${i === 0 ? "-rotate-2" : i === 3 ? "rotate-2" : ""}`}
               >
-                <GameCover game={g} className="aspect-[5/3] w-full" />
+                <GameImage game={g} className="aspect-[5/3] w-full" />
               </div>
             ))}
           </div>

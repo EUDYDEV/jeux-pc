@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { GAMES } from "@/data/games";
 import type { BookingDraft, Game, PcSpecs } from "@/lib/types";
 
-export const EMPTY_PC: PcSpecs = { cpu: "", ramGb: "", gpu: "", gpuTier: "", storageGb: "", windows: "" };
+export const EMPTY_PC: PcSpecs = { cpu: "", ramGb: "", gpu: "", storageGb: "", windows: "" };
 export const EMPTY_BOOKING: BookingDraft = {
   fullName: "",
   whatsapp: "",

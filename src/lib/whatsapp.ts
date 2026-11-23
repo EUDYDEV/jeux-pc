@@ -1,6 +1,7 @@
 import { SITE } from "./config";
 import { formatDateFr, formatFcfa } from "./format";
-import { GPU_TIERS } from "./config";
+import { checkGame, VERDICT_LABEL } from "./compat";
+import { recognizeCpu, recognizeGpu, gpuTierLabel } from "./hardware";
 import type { BookingDraft, Game, PcSpecs } from "./types";
 
 export function waLink(text?: string): string {
@@ -16,7 +17,8 @@ export function buildBookingMessage(opts: {
   ref: string;
 }): string {
   const { booking, games, pc, total, ref } = opts;
-  const tier = GPU_TIERS.find((t) => t.value === pc.gpuTier)?.label;
+  const gpuInfo = recognizeGpu(pc.gpu);
+  const cpuInfo = recognizeCpu(pc.cpu);
   const lines: string[] = [
     `🎮 *DEMANDE D'INSTALLATION* — réf. ${ref}`,
     "",
@@ -28,12 +30,14 @@ export function buildBookingMessage(opts: {
     `💰 *Total estimatif* : ${formatFcfa(total)}`,
     "",
     "💻 *Caractéristiques du PC* :",
-    `• Processeur : ${pc.cpu || "non renseigné"}`,
+    `• Processeur : ${pc.cpu || "non renseigné"}${cpuInfo ? "" : pc.cpu ? " (non reconnu)" : ""}`,
     `• RAM : ${pc.ramGb ? pc.ramGb + " Go" : "non renseignée"}`,
-    `• Carte graphique : ${pc.gpu || "non renseignée"}${tier ? ` (${tier})` : ""}`,
+    `• Carte graphique : ${pc.gpu || "non renseignée"}${gpuInfo ? ` (${gpuTierLabel(gpuInfo.score)})` : ""}`,
     `• Stockage libre : ${pc.storageGb ? pc.storageGb + " Go" : "non renseigné"}`,
     `• Windows : ${pc.windows ? (pc.windows === "7/8" ? "7 / 8" : pc.windows) : "non renseigné"}`,
   ];
+  lines.push("", "✅ *Compatibilité estimée par le site (indicatif)* :");
+  for (const g of games) lines.push(`• ${g.name} : ${VERDICT_LABEL[checkGame(g, pc).verdict]}`);
   if (pc.screenshotName) lines.push(`• Capture d'écran : à envoyer ensuite dans cette conversation (${pc.screenshotName})`);
   lines.push(
     "",

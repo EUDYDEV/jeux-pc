@@ -26,10 +26,3 @@ export const TIME_SLOTS = [
   "18:00",
 ];
 
-export const GPU_TIERS = [
-  { value: "0", label: "Intégrée (Intel HD / UHD, AMD Vega)" },
-  { value: "1", label: "Entrée de gamme (GTX 650–1050, RX 550)" },
-  { value: "2", label: "Milieu de gamme (GTX 1060–1660, RX 570–580)" },
-  { value: "3", label: "Haut de gamme (RTX 2060–3060, RX 6600)" },
-  { value: "4", label: "Très haut de gamme (RTX 3070+, RX 6700+)" },
-];
