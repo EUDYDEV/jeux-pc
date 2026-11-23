@@ -29,7 +29,7 @@ const PART_LABEL = { cpu: "CPU", gpu: "GPU", ram: "RAM", disk: "Disque", windows
 const RAM_OPTIONS = ["2", "4", "6", "8", "12", "16", "24", "32"];
 
 export function CompatClient() {
-  const { ready, pc, setPc, games } = useSelection();
+  const { ready, pc, setPc, games, has, toggle } = useSelection();
   const [preview, setPreview] = useState<string | null>(null);
   const [fileError, setFileError] = useState("");
   const [detectMsg, setDetectMsg] = useState("");
@@ -43,7 +43,13 @@ export function CompatClient() {
   const cpuInfo = useMemo(() => recognizeCpu(pc.cpu), [pc.cpu]);
   const gpuInfo = useMemo(() => recognizeGpu(pc.gpu), [pc.gpu]);
   const anyFilled = !!(pc.cpu || pc.gpu || pc.ramGb || pc.storageGb || pc.windows);
-  const results = useMemo(() => games.map(({ game }) => ({ game, res: checkGame(game, pc) })), [games, pc]);
+  const noSelection = games.length === 0;
+  const results = useMemo(() => {
+    const list = (noSelection ? GAMES : games.map((x) => x.game)).map((game) => ({ game, res: checkGame(game, pc) }));
+    const order: Record<Verdict, number> = { ok: 0, limite: 1, inconnu: 2, non: 3 };
+    // Sans sélection : on montre tout le catalogue, les jeux compatibles en premier
+    return noSelection ? list.sort((a, b) => order[a.res.verdict] - order[b.res.verdict]) : list;
+  }, [games, pc, noSelection]);
   const catalogue = useMemo(() => {
     if (!anyFilled) return null;
     const r = GAMES.map((g) => ({ g, v: checkGame(g, pc).verdict }));
@@ -222,34 +228,41 @@ export function CompatClient() {
             </p>
           )}
 
-          {games.length === 0 ? (
-            <div className="mt-5 rounded-xl bg-raised p-4 text-sm text-mute">
-              Aucun jeu sélectionné. <Link href="/catalogue" className="font-semibold text-violet hover:underline">Choisir des jeux</Link> pour voir la compatibilité jeu par jeu.
-            </div>
-          ) : (
-            <ul className="mt-5 space-y-2.5">
-              {results.map(({ game, res }) => (
-                <li key={game.id} className="rounded-xl bg-raised p-3.5">
-                  <div className="flex gap-3">
-                    <span className="mt-0.5">{ICON[res.verdict]}</span>
-                    <div className="min-w-0">
-                      <p className="font-semibold">
-                        {game.name} <span className="ml-1 text-xs font-medium text-mute">· {VERDICT_LABEL[res.verdict]}</span>
-                      </p>
-                      <p className="text-xs text-mute">{res.reasons.join(" · ")}</p>
-                      <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-mute">
+          {noSelection && (
+            <p className="mt-4 rounded-xl bg-raised p-3 text-sm text-mute">
+              Vous n&apos;avez pas encore choisi de jeu : voici la compatibilité de <strong className="text-white">tout le catalogue</strong> avec votre PC. Ajoutez ceux qui vous intéressent.
+            </p>
+          )}
+          <ul className="mt-5 max-h-[60vh] space-y-2.5 overflow-y-auto pr-1">
+            {results.map(({ game, res }) => (
+              <li key={game.id} className="rounded-xl bg-raised p-3.5">
+                <div className="flex gap-3">
+                  <span className="mt-0.5">{ICON[res.verdict]}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold">{game.name}</p>
+                    <p className={`text-sm font-semibold ${res.verdict === "ok" ? "text-lime" : res.verdict === "limite" ? "text-amber-300" : res.verdict === "non" ? "text-danger" : "text-mute"}`}>
+                      {VERDICT_LABEL[res.verdict]}
+                    </p>
+                    <p className="text-xs text-mute">{res.reasons.join(" · ")}</p>
+                    <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                      <p className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-mute">
                         {(Object.keys(PART_LABEL) as (keyof typeof PART_LABEL)[]).map((k) => (
                           <span key={k} className="inline-flex items-center gap-1">
                             <span className={`size-2 rounded-full ${DOT[res.parts[k]]}`} /> {PART_LABEL[k]}
                           </span>
                         ))}
                       </p>
+                      {noSelection || !has(game.id) ? (
+                        <button type="button" onClick={() => toggle(game.id)} className="min-h-9 rounded-lg bg-violet px-3 text-xs font-semibold">+ Ajouter</button>
+                      ) : (
+                        <span className="text-xs font-semibold text-violet">✔ Dans ma sélection</span>
+                      )}
                     </div>
                   </div>
-                </li>
-              ))}
-            </ul>
-          )}
+                </div>
+              </li>
+            ))}
+          </ul>
 
           <div className="mt-5 flex gap-3 rounded-xl border border-cyan/30 bg-cyan/5 p-4 text-sm">
             <Info className="mt-0.5 size-4 shrink-0 text-cyan" aria-hidden />

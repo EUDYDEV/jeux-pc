@@ -5,6 +5,7 @@ import { Check, Cpu, HardDrive, MemoryStick, Plus } from "lucide-react";
 import type { Game } from "@/lib/types";
 import { formatFcfa } from "@/lib/format";
 import { useSelection } from "@/context/SelectionContext";
+import { checkGame, VERDICT_LABEL } from "@/lib/compat";
 import { GameImage } from "./GameImage";
 
 const BADGE_STYLE: Record<string, string> = {
@@ -14,7 +15,8 @@ const BADGE_STYLE: Record<string, string> = {
 };
 
 export function GameCard({ game }: { game: Game }) {
-  const { has, toggle } = useSelection();
+  const { has, toggle, pc } = useSelection();
+  const compat = pc.cpu || pc.gpu || pc.ramGb ? checkGame(game, pc) : null;
   const selected = has(game.id);
 
   return (
@@ -57,6 +59,17 @@ export function GameCard({ game }: { game: Game }) {
             <HardDrive className="size-3.5 shrink-0 text-cyan" aria-hidden /> {game.sizeGb} Go d&apos;espace · Windows {game.minWindows}+
           </li>
         </ul>
+
+        {compat && compat.verdict !== "inconnu" && (
+          <p
+            className={`rounded-lg px-3 py-2 text-xs font-semibold ${
+              compat.verdict === "ok" ? "bg-lime/15 text-lime" : compat.verdict === "limite" ? "bg-amber-400/15 text-amber-300" : "bg-danger/15 text-danger"
+            }`}
+          >
+            {compat.verdict === "ok" ? "✔" : compat.verdict === "limite" ? "⚠" : "✖"} {VERDICT_LABEL[compat.verdict]}
+            {compat.verdict === "non" && compat.blockers[0] ? ` — ${compat.blockers[0]}` : ""}
+          </p>
+        )}
 
         <div className="mt-auto flex flex-wrap items-end justify-between gap-3 pt-2">
           <div>
