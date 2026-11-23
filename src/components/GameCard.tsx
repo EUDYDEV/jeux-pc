@@ -67,7 +67,8 @@ export function GameCard({ game }: { game: Game }) {
             }`}
           >
             {compat.verdict === "ok" ? "✔" : compat.verdict === "limite" ? "⚠" : "✖"} {VERDICT_LABEL[compat.verdict]}
-            {compat.verdict === "non" && compat.blockers[0] ? ` — ${compat.blockers[0]}` : ""}
+            {compat.verdict === "non" && compat.blockers[0] ? ` — ${compat.blockers[0]}.` : ""}
+            {compat.verdict !== "ok" && <span className="mt-0.5 block font-medium opacity-90">Vous pouvez quand même commander.</span>}
           </p>
         )}
 

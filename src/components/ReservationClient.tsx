@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Clock3, Home, MessageCircle, Pencil, Wifi } from "lucide-react";
 import { useSelection } from "@/context/SelectionContext";
 import { SITE, TIME_SLOTS } from "@/lib/config";
+import { checkGame } from "@/lib/compat";
 import { formatDateFr, formatFcfa, todayIso } from "@/lib/format";
 import { buildBookingMessage, waLink } from "@/lib/whatsapp";
 import { localRepository } from "@/lib/repository";
@@ -211,9 +212,14 @@ export function ReservationClient() {
             <span className="text-mute">Total estimatif</span>
             <span className="font-display text-2xl font-bold text-lime">{formatFcfa(total)}</span>
           </div>
+          {games.some((g) => checkGame(g.game, pc).verdict === "non") && (
+            <p className="mt-4 rounded-lg bg-lime/10 p-3 text-xs text-lime">
+              Certains jeux sont signalés non compatibles avec votre PC. Aucun souci : vous pouvez commander, le technicien vous proposera la meilleure solution.
+            </p>
+          )}
           <div className="mt-4 text-xs text-mute">
             PC : {pc.ramGb || pc.cpu ? [pc.cpu, pc.ramGb && `${pc.ramGb} Go RAM`, pc.gpu].filter(Boolean).join(" · ") : "non renseigné"}{" "}
-            <Link href="/compatibilite" className="font-semibold text-violet hover:underline">Modifier</Link>
+            <Link href="/compatibilite" className="font-semibold text-violet hover:underline">{pc.cpu || pc.gpu || pc.ramGb ? "Modifier" : "Vérifier (facultatif)"}</Link>
           </div>
         </div>
 

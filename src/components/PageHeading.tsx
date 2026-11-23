@@ -11,7 +11,7 @@ export function PageHeading({ eyebrow, title, children }: { eyebrow: string; tit
   );
 }
 
-const STEPS = ["Choisir les jeux", "Compatibilité", "Réservation"];
+const STEPS = ["Choisir les jeux", "Compatibilité (facultatif)", "Réservation"];
 
 export function Steps({ current }: { current: 0 | 1 | 2 }) {
   return (

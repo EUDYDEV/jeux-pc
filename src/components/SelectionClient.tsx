@@ -92,6 +92,9 @@ export function SelectionClient() {
         <Link href="/compatibilite" className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-violet font-semibold transition hover:bg-violet/85 active:scale-[0.98]">
           Continuer ma réservation <ArrowRight className="size-4" />
         </Link>
+        <Link href="/reservation" className="mt-3 block text-center text-sm font-semibold text-mute underline-offset-2 hover:text-white hover:underline">
+          Passer directement à la réservation (sans vérifier mon PC)
+        </Link>
       </aside>
     </div>
   );
