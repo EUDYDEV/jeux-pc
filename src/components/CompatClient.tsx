@@ -177,7 +177,7 @@ export function CompatClient() {
                 : cpuInfo.ambiguous
                   ? "⚠ Plusieurs modèles saisis : indiquez un seul processeur (ex. Intel Core i5-8250U) pour un résultat fiable."
                   : cpuInfo.estimated
-                    ? `≈ Estimation (${cpuInfo.label}) : modèle exact non identifié, le technicien vérifiera. Ajoutez le numéro du modèle pour plus de précision.`
+                    ? `≈ Modèle exact introuvable dans notre base (estimation : ${cpuInfo.label}). Recopiez le nom complet du processeur (ex. Intel Core i5-8250U) ou utilisez « Détecter mon PC ». Le technicien vérifiera de toute façon.`
                     : `✔ Reconnu : ${cpuInfo.label} — ${cpuTierLabel(cpuInfo.score)}`}
             </p>
           )}
@@ -194,7 +194,7 @@ export function CompatClient() {
                 : gpuInfo.ambiguous
                   ? "⚠ Plusieurs modèles saisis : indiquez une seule carte graphique pour un résultat fiable."
                   : gpuInfo.estimated
-                    ? `≈ Estimation (${gpuInfo.label}) : modèle exact non identifié, le technicien vérifiera. Vérifiez l'orthographe ou ajoutez le numéro exact.`
+                    ? `≈ Modèle exact introuvable dans notre base (estimation : ${gpuInfo.label}). Vérifiez le nom dans Windows : Gestionnaire de périphériques → Cartes graphiques. Le technicien vérifiera de toute façon.`
                     : `✔ Reconnue : ${gpuInfo.label} — ${gpuTierLabel(gpuInfo.score)}`}
             </p>
           )}

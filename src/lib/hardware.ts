@@ -127,6 +127,7 @@ function recognizeGpuModel(input: string): Recognized | null {
     [/radeon.*\bhd\b\s*\d{4}/, "Radeon HD (ancienne)", 10],
     [/\b(8|9)\d{2}\s?m(x)?\b/, "GeForce M (portable ancien)", 12],
     [/geforce.*\b(8|9)\d{3}\b/, "GeForce série 8/9 (très ancienne)", 5],
+    [/\b(u?hd)\b.*\b[4-6]\d{3}\b/, "Intel HD série 4000-6000 (ancienne génération)", 12],
     [/\buhd\b/, "Intel UHD (intégrée)", 14],
     [/\biris\b/, "Intel Iris (intégrée)", 22],
     [/intel.*\bhd\b|\bhd graphics\b/, "Intel HD (intégrée)", 9],
