@@ -23,7 +23,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-line/80 bg-bg/80 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-2 px-4 sm:gap-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2.5" onClick={() => setOpen(false)}>
           <span className="grid size-9 place-items-center rounded-lg bg-gradient-to-br from-violet to-cyan text-black">
             <Gamepad2 className="size-5" aria-hidden />
@@ -33,7 +33,7 @@ export function Header() {
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex" aria-label="Navigation principale">
+        <nav className="hidden items-center gap-1 lg:flex" aria-label="Navigation principale">
           {NAV.map((n) => {
             const active = n.href === "/" ? pathname === "/" : pathname.startsWith(n.href);
             return (
@@ -72,7 +72,7 @@ export function Header() {
             </AnimatePresence>
           </Link>
           <button
-            className="grid size-11 place-items-center rounded-xl border border-line md:hidden"
+            className="grid size-11 place-items-center rounded-xl border border-line lg:hidden"
             onClick={() => setOpen((o) => !o)}
             aria-expanded={open}
             aria-label="Menu"
@@ -88,7 +88,7 @@ export function Header() {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden border-t border-line md:hidden"
+            className="overflow-hidden border-t border-line lg:hidden"
             aria-label="Navigation mobile"
           >
             <div className="flex flex-col gap-1 p-3">

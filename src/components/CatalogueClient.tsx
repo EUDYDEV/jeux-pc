@@ -53,9 +53,9 @@ export function CatalogueClient() {
   return (
     <div className="mx-auto max-w-7xl px-4 pb-32 pt-8 sm:px-6">
       {/* Barre d'outils */}
-      <div className="sticky top-16 z-20 -mx-4 border-b border-line/70 bg-bg/90 px-4 py-4 backdrop-blur-xl sm:-mx-6 sm:px-6">
-        <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
-          <label className="relative block">
+      <div className="z-20 -mx-4 border-b border-line/70 bg-bg/90 px-4 py-4 backdrop-blur-xl sm:-mx-6 sm:px-6 md:sticky md:top-16">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-[1fr_auto_auto]">
+          <label className="relative col-span-2 block md:col-span-1">
             <span className="sr-only">Rechercher un jeu</span>
             <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-mute" aria-hidden />
             <input
@@ -146,7 +146,7 @@ export function CatalogueClient() {
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            className="fixed inset-x-3 bottom-4 z-30 mx-auto flex max-w-2xl items-center justify-between gap-3 rounded-2xl border border-violet/50 bg-raised/95 p-3 pl-5 shadow-2xl backdrop-blur-xl sm:bottom-6 sm:pr-24"
+            className="fixed inset-x-3 bottom-24 z-30 mx-auto flex max-w-2xl items-center justify-between gap-3 rounded-2xl border border-violet/50 bg-raised/95 p-3 pl-5 shadow-2xl backdrop-blur-xl sm:bottom-6 sm:pr-24"
           >
             <p className="text-sm">
               <strong className="font-display text-lg">{count}</strong> jeu{count > 1 ? "x" : ""} ·{" "}

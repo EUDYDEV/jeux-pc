@@ -62,15 +62,15 @@ export default function HomePage() {
             <dl className="mt-10 grid max-w-md grid-cols-3 gap-4 border-t border-line pt-6">
               <div>
                 <dt className="text-xs text-mute">Jeux au catalogue</dt>
-                <dd className="font-display text-2xl font-bold">{GAMES.length}+</dd>
+                <dd className="font-display text-lg font-bold sm:text-2xl">{GAMES.length}+</dd>
               </div>
               <div>
                 <dt className="text-xs text-mute">À partir de</dt>
-                <dd className="font-display text-2xl font-bold text-lime">{formatFcfa(cheapest)}</dd>
+                <dd className="font-display text-lg font-bold text-lime sm:text-2xl">{formatFcfa(cheapest)}</dd>
               </div>
               <div>
                 <dt className="text-xs text-mute">Mode</dt>
-                <dd className="font-display text-2xl font-bold">Distance</dd>
+                <dd className="font-display text-lg font-bold sm:text-2xl">Distance</dd>
               </div>
             </dl>
           </div>

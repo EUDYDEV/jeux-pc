@@ -58,7 +58,7 @@ export function GameCard({ game }: { game: Game }) {
           </li>
         </ul>
 
-        <div className="mt-auto flex items-end justify-between gap-3 pt-2">
+        <div className="mt-auto flex flex-wrap items-end justify-between gap-3 pt-2">
           <div>
             <p className="text-[11px] uppercase tracking-wider text-mute">Installation</p>
             <p className="font-display text-xl font-bold text-lime">{formatFcfa(game.price)}</p>
@@ -66,7 +66,7 @@ export function GameCard({ game }: { game: Game }) {
           <button
             onClick={() => toggle(game.id)}
             aria-pressed={selected}
-            className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3.5 text-sm font-semibold transition active:scale-95 ${
+            className={`inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-xl px-3.5 text-sm font-semibold transition active:scale-95 ${
               selected ? "bg-violet/20 text-violet ring-1 ring-violet/60" : "bg-violet text-white hover:bg-violet/85"
             }`}
           >
