@@ -1,0 +1,109 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-bg: #07070d;
+  --color-surface: #0e0e19;
+  --color-raised: #151524;
+  --color-line: #232338;
+  --color-ink: #ecebf5;
+  --color-mute: #9a99b5;
+  --color-violet: #8b5cf6;
+  --color-cyan: #22d3ee;
+  --color-lime: #a3e635;
+  --color-danger: #fb7185;
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: var(--font-display), system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* Grille subtile de fond type "PCB" */
+.bg-grid {
+  background-image:
+    linear-gradient(to right, rgb(139 92 246 / 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(139 92 246 / 0.07) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 75%);
+}
+
+.glow-text {
+  background: linear-gradient(100deg, #c4b5fd 0%, #22d3ee 55%, #a3e635 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.card-border {
+  position: relative;
+}
+.card-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(140deg, rgb(139 92 246 / 0.55), transparent 40%, rgb(34 211 238 / 0.45));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.25s;
+  pointer-events: none;
+}
+.card-border:hover::before {
+  opacity: 1;
+}
+
+.field {
+  width: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: 0.75rem;
+  padding: 0.75rem 0.9rem;
+  color: var(--color-ink);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  min-height: 46px;
+}
+.field::placeholder {
+  color: #5f5e7c;
+}
+.field:focus {
+  outline: none;
+  border-color: var(--color-violet);
+  box-shadow: 0 0 0 3px rgb(139 92 246 / 0.25);
+}
+.field[aria-invalid="true"] {
+  border-color: var(--color-danger);
+}
+
+::selection {
+  background: rgb(139 92 246 / 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
