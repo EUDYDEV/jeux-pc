@@ -56,6 +56,11 @@ const GPU_LIST: [string, number][] = [
   ["rx 460", 50], ["rx 470", 90], ["rx 480", 105], ["rx 550", 40], ["rx 560", 55], ["rx 570", 100], ["rx 580", 115], ["rx 590", 130],
   ["rx 5500 xt", 125], ["rx 5600 xt", 175], ["rx 5700 xt", 240], ["rx 5700", 220],
   ["rx 6400", 85], ["rx 6500 xt", 120], ["rx 6600 xt", 255], ["rx 6600", 235], ["rx 6650 xt", 270], ["rx 6700 xt", 330], ["rx 6750 xt", 350], ["rx 6800", 420], ["rx 6900 xt", 520],
+  ["rtx 5090", 800], ["rtx 5080", 600], ["rtx 5070 ti", 480], ["rtx 5070", 420], ["rtx 5060 ti", 330], ["rtx 5060", 290], ["rtx 5050", 220],
+  ["rx 9070 xt", 520], ["rx 9070", 450], ["rx 9060 xt", 330],
+  ["arc a310", 35], ["arc a380", 60], ["arc a580", 150], ["arc a750", 190], ["arc a770", 210], ["arc b570", 230], ["arc b580", 250],
+  ["arc 140v", 50], ["arc 130v", 42], ["arc graphics", 65], ["arc", 65],
+  ["890m", 75], ["880m", 68], ["radeon 780m", 55], ["760m", 38], ["740m", 28],
   ["rx 7600", 270], ["rx 7700 xt", 380], ["rx 7800 xt", 450],
 ];
 
@@ -76,11 +81,13 @@ export function recognizeGpu(input: string): Recognized | null {
   for (const [key, score, raw] of GPU_SORTED) {
     if (padded.includes(` ${key} `)) return { label: raw.toUpperCase().replace(/ TI$/, " Ti").replace(/ SUPER$/, " Super"), score };
   }
-  // Modèle non listé : estimation grossière d'après le numéro (ex. "GTX 1070 Ti" absent)
-  const m = n.match(/(gtx|rtx|rx|gt) (\d{3,4})/);
+  // Modèle non listé : estimation d'après la classe du modèle (xx50, xx60, xx70, xx80, xx90)
+  const m = n.match(/(gtx|rtx|rx|gt) (\d{3,4})/);
   if (m) {
-    const tier = parseInt(m[2], 10) % 1000;
-    const est = tier >= 800 ? 220 : tier >= 600 ? 140 : tier >= 500 ? 80 : 30;
+    const num = parseInt(m[2], 10);
+    const modern = m[1] === "rtx" || (m[1] === "rx" && num >= 5000);
+    const cls = Math.floor((num % 1000) / 100); // 5,6,7,8,9
+    const est = modern ? (cls >= 9 ? 600 : cls >= 8 ? 450 : cls >= 7 ? 350 : cls >= 6 ? 250 : 150) : cls >= 8 ? 220 : cls >= 6 ? 140 : cls >= 5 ? 80 : 30;
     return { label: `${m[1].toUpperCase()} ${m[2]} (estimé)`, score: est };
   }
   return null;
@@ -117,6 +124,25 @@ export function recognizeCpu(input: string): Recognized | null {
     if (suffix.startsWith("y")) score *= 0.6;
     return { label: `Core i${m[1]}-${digits}${suffix.toUpperCase()}`, score: Math.round(score) };
   }
+
+  // Intel Core Ultra (séries 1 et 2)
+  m = s.match(/core\s*ultra\s*([3579])\s*(\d{3})\s*([a-z]{0,2})/);
+  if (m) {
+    const base: Record<string, number> = { "3": 110, "5": 165, "7": 210, "9": 250 };
+    const series2 = m[2][0] === "2";
+    let score = base[m[1]] * (series2 ? 1.25 : 1);
+    if (/^(u|v)/.test(m[3])) score *= 0.65;
+    return { label: `Core Ultra ${m[1]} ${m[2]}${m[3].toUpperCase()}`, score: Math.round(score) };
+  }
+  m = s.match(/core\s*ultra\s*([3579])/);
+  if (m) {
+    const base: Record<string, number> = { "3": 110, "5": 165, "7": 210, "9": 250 };
+    return { label: `Core Ultra ${m[1]}`, score: base[m[1]] };
+  }
+
+  // AMD Ryzen AI (série 300) et Ryzen N XXXX
+  m = s.match(/ryzen\s*ai\s*(?:max\+?\s*)?([3579])\s*(?:hx\s*)?(\d{3})/);
+  if (m) return { label: `Ryzen AI ${m[1]} ${m[2]}`, score: { "3": 150, "5": 190, "7": 230, "9": 270 }[m[1]] ?? 200 };
 
   // AMD Ryzen N XXXX
   m = s.match(/ryzen\s*([3579])\s*(\d{4})([a-z]{0,2})/);
